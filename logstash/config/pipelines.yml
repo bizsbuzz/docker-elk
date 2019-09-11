@@ -1,0 +1,24 @@
+# This file is where you define your pipelines. You can define multiple.
+# For more information on multiple pipelines, see the documentation:
+#   https://www.elastic.co/guide/en/logstash/current/multiple-pipelines.html
+#   https://github.com/elastic/logstash/blob/master/config/pipelines.yml
+
+- pipeline.id: default
+  path.config: "/usr/share/logstash/pipeline/logstash.conf"
+  pipeline.workers: 1
+- pipeline.id: amazon-products
+  path.config: "/usr/share/logstash/pipeline/logstash_products.conf"
+  pipeline.workers: 1
+- pipeline.id: bigginsight
+  path.config: "/usr/share/logstash/pipeline/logstash_network_traffic_data.conf"
+  pipeline.workers: 1
+- pipeline.id: reverse-products
+  path.config: "/usr/share/logstash/pipeline/elasticsearch_to_csv.conf"
+  pipeline.workers: 1
+- pipeline.id: apache-log
+  path.config: "/usr/share/logstash/pipeline/apache_log.conf"
+  pipeline.workers: 1  
+- pipeline.id: collectd
+  path.config: "/usr/share/logstash/pipeline/collectd.conf"
+  pipeline.workers: 1    
+  

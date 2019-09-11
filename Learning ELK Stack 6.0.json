@@ -1,0 +1,1144 @@
+PUT /catalog/_mapping/category
+{
+  "properties": {
+    "code": {
+      "type": "keyword"
+    }
+  }
+}
+
+POST /catalog/category
+{
+  "name": "sports",
+  "code": "C004",
+  "description": "Sports equipment"
+}
+
+
+GET /_search/
+
+GET /catalog/_search
+GET /catalog/product/_search
+PUT /catalog/product/1
+{
+    "sku": "SP000001",
+    "title": "Elasticsearch for Hadoop",
+    "description": "Elasticsearch for Hadoop",
+    "author": "Vishal Shukla",
+    "ISBN": "1785288997",
+    "price": 26.99
+}
+
+PUT index_standard_analyzer
+{
+  "settings": {
+    "analysis": {
+      "analyzer": {
+        "std": { 
+          "type": "standard"
+        }
+      }
+    }
+  },
+  "mappings": {
+    "my_type": {
+      "properties": {
+        "my_text": {
+          "type": "text",
+          "analyzer": "std"
+        }
+      }
+    }
+  }
+}
+
+
+GET /_analyze
+{
+  "text": "Learning Elastic Stack 6.0",
+  "analyzer": "standard"
+}
+
+PUT /custom_analyzer_index
+{
+  "settings": {
+    "index": {
+      "analysis": {
+        "analyzer": {
+          "custom_analyzer": {
+            "type": "custom",
+            "tokenizer": "standard",
+            "filter": [
+              "lowercase",
+              "custom_edge_ngram"
+            ]
+          }
+        },
+        "filter": {
+          "custom_edge_ngram": {
+            "type": "edge_ngram",
+            "min_gram": 2,
+            "max_gram": 10
+          }
+        }
+      }
+    }
+  },
+  "mappings": {
+    "my_type": {
+      "properties": {
+        "product": {
+          "type": "text",
+          "analyzer": "custom_analyzer",
+          "search_analyzer": "standard"
+        }
+      }
+    }
+  }
+}
+
+POST /custom_analyzer_index/my_type
+{
+  "product": "Learning Elastic Stack 6"
+}
+
+POST /custom_analyzer_index/my_type
+{
+  "product": "Mastering Elasticsearch"
+}
+
+GET /custom_analyzer_index/_search
+{
+  "query": {
+    "match": {
+      "product": "Ela"
+    }
+  }
+}
+
+
+PUT /amazon_products
+{
+  "settings": {
+    "number_of_shards": 1,
+    "number_of_replicas": 0,
+    "analysis": {
+      "analyzer": {}
+    }
+  },
+  "mappings": {
+    "products": {
+      "properties": {
+        "id": {
+          "type": "keyword"
+        },
+        "title": {
+          "type": "text"
+        },
+        "description": {
+          "type": "text"
+        },
+        "manufacturer": {
+          "type": "text",
+          "fields": {
+            "raw": {
+              "type": "keyword"
+            }
+          }
+        },
+        "price": {
+          "type": "scaled_float",
+          "scaling_factor": 100
+        }
+      }
+    }
+  }
+}
+
+POST _reindex
+{
+  "source": {
+    "index": "amazon_products"
+  },
+  "dest": {
+    "index": "amazon_products_reindex"
+  }
+}
+
+GET /amazon_products/products/_search
+{
+  "query": {
+    "match_all": {}
+  }
+}
+
+GET /amazon_products/products/_search
+{
+  "query": {
+    "range": {
+      "price": {
+        "gte": 10,
+        "lte": 15
+      }
+    }
+  }
+}
+
+
+
+GET /amazon_products/products/_search
+{
+  "from": 0,
+  "size": 10,
+  "query": {
+    "range": {
+      "price": {
+        "gte": 13,
+        "lte": 15,
+        "boost": 2.1
+      }
+    }
+  }
+}
+
+GET /amazon_products/products/_search
+{
+  "query": {
+    "term": {
+      "manufacturer.raw": "victory multimedia"
+    }
+  }
+}
+
+#High-level query broken into term query above
+GET /amazon_products/products/_search
+{
+  "query": {
+    "match": {
+      "manufacturer.raw": "victory multimedia"
+    }
+  }
+}
+
+GET /amazon_products/products/_search
+{
+  "query": {
+    "constant_score": {
+      "filter": {
+        "term": {
+          "manufacturer.raw": "victory multimedia"
+        }
+      }
+    }
+  }
+}
+
+GET /amazon_products/products/_search
+{
+  "query": {
+    "exists": {
+      "field": "description"
+    }
+  }
+}
+
+GET /amazon_products/products/_search
+{
+  "query": {
+    "match": {
+      "manufacturer": "victory multimedia"
+    }
+  }
+}
+
+GET /amazon_products/products/_search
+{
+  "query": {
+    "match": {
+      "manufacturer": {
+        "query": "victory multimedia",
+        "operator": "and"
+      }
+    }
+  }
+}
+
+GET /amazon_products/products/_search
+{
+  "query": {
+    "match": {
+      "manufacturer": {
+        "query": "victory multimedia",
+        "minimum_should_match": 2
+      }
+    }
+  }
+}
+
+GET /amazon_products/products/_search
+{
+  "query": {    
+    "match": {
+      "manufacturer": {
+        "query": "victor multimedia",
+        "fuzziness": 1
+      }
+    }
+  }
+}
+
+GET /amazon_products/products/_search
+{
+  "query": {    
+    "match": {
+      "manufacturer": {
+        "query": "victor multimedia",
+        "fuzziness": 2
+      }
+    }
+  }
+}
+
+GET /amazon_products/products/_search
+{
+  "query": {
+    "match_phrase": {
+      "description": {
+        "query": "real video aquarium",
+        "slop": 1
+      }
+    }
+  }
+}
+  
+GET /amazon_products/products/_search
+{
+  "query": {
+    "multi_match": {
+      "query": "monitor aquarium", 
+      "fields": ["title", "description"]
+    }
+  }
+}  
+
+GET /amazon_products/products/_search
+{
+  "query": {
+    "multi_match": {
+      "query": "monitor aquarium", 
+      "fields": ["title^3","description"]
+    }
+  }
+}
+
+GET /amazon_products/products/_search
+{
+  "query": {
+    "bool": {
+      "must": [...],        scoring queries executed in query context
+      "should": [...],      scoring queries executed in query context
+      "filter": {},         non-scoring queries executed in filter context
+      "must_not": [...]     non-scoring queries executed in filter context
+    }
+  }
+}
+
+
+#Since we want to OR the conditions, we have placed them under should. Since we are not interested in the scores, we have wrapped our bool query inside a constant score query.
+GET /amazon_products/products/_search
+{
+  "query": {
+    "constant_score": {
+      "filter": {
+        "bool": {
+          "should": [
+            {
+              "range": {
+                "price": {
+                  "gte": 10,
+                  "lte": 13
+                }
+              }
+            },
+            {
+              "term": {
+                "manufacturer.raw": {
+                  "value": "valuesoft"
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}
+
+#Please notice that all conditions that need to be ORed together are placed inside should. The conditions that need to be ANDed together, can be placed inside the must element. Although it is also possible to put all the conditions to be ANDed in the filter element as well.
+GET /amazon_products/products/_search
+{
+  "query": {
+    "constant_score": {
+      "filter": {
+        "bool": {
+          "must": [
+            {
+              "range": {
+                "price": {
+                  "gte": 10,
+                  "lte": 30
+                }
+              }
+            }
+          ],
+          "should": [
+            {
+              "term": {
+                "manufacturer.raw": {
+                  "value": "valuesoft"
+                }
+              }
+            },
+            {
+              "term": {
+                "manufacturer.raw": {
+                  "value": "pinnacle"
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}
+
+GET /amazon_products/products/_search
+{
+  "query": {
+    "constant_score": {
+      "filter": {
+        "bool": {
+          "must": [
+            {
+              "range": {
+                "price": {                
+                  "gte": 10,
+                  "lte": 20
+                }
+              }
+            }
+          ],
+          "must_not": [
+            {
+              "term": {
+                "manufacturer.raw": "encore"
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}
+
+#Analytics
+
+POST /<index_name>/<type_name>/_search
+{  
+  "aggs": {                                 
+    ... type of aggregation ...
+          },
+  "query": {  ... type of query ... },              //optional query part
+  "size": 0                                         //size typically set to 0
+}
+
+
+
+#Chapter 4 Analytics using Elasticsearch
+
+PUT /bigginsight
+{
+  "settings": {
+    "index": {
+      "number_of_replicas": "1",
+      "number_of_shards": "5"
+    }
+  },
+  "mappings": {
+    "usageReport": {
+      "properties": {
+        "accessPointId": {
+          "type": "keyword",
+          "fields": {
+            "analyzed": {
+              "type": "text"
+            }
+          }
+        },
+        "application": {
+          "type": "keyword",
+          "fields": {
+            "analyzed": {
+              "type": "text"
+            }
+          }
+        },
+        "band": {
+          "type": "keyword",
+          "fields": {
+            "analyzed": {
+              "type": "text"
+            }
+          }
+        },
+        "bandwidth": {
+          "type": "double"
+        },
+        "category": {
+          "type": "keyword",
+          "fields": {
+            "analyzed": {
+              "type": "text"
+            }
+          }
+        },
+        "customer": {
+          "type": "keyword",
+          "fields": {
+            "analyzed": {
+              "type": "text"
+            }
+          }
+        },
+        "department": {
+          "type": "keyword",
+          "fields": {
+            "analyzed": {
+              "type": "text"
+            }
+          }
+        },
+        "downloadCurrent": {
+          "type": "double"
+        },
+        "downloadTotal": {
+          "type": "integer"
+        },
+        "inactiveMs": {
+          "type": "integer"
+        },
+        "location": {
+          "type": "geo_point"
+        },
+        "mac": {
+          "type": "keyword",
+          "fields": {
+            "analyzed": {
+              "type": "text"
+            }
+          }
+        },
+        "networkId": {
+          "type": "keyword",
+          "fields": {
+            "analyzed": {
+              "type": "text"
+            }
+          }
+        },
+        "signalStrength": {
+          "type": "integer"
+        },
+        "time": {
+          "type": "date",
+          "format": "strict_date_optional_time||epoch_millis"
+        },
+        "uploadCurrent": {
+          "type": "double"
+        },
+        "uploadTotal": {
+          "type": "integer"
+        },
+        "usage": {
+          "type": "double"
+        },
+        "username": {
+          "type": "keyword",
+          "fields": {
+            "analyzed": {
+              "type": "text"
+            }
+          }
+        }
+      }
+    }
+  }
+}
+GET /bigginsight/usageReport/_search
+{
+  "query": {
+    "match_all": {}
+  },
+  "size": 1
+}
+
+
+GET bigginsight/_search
+{
+ "aggregations": {                     
+    "download_sum": {                  
+      "sum": {                         
+        "field": "downloadTotal"       
+      }      
+    }
+  },
+  "size": 0                            
+}
+
+
+GET bigginsight/_search
+{
+ "aggregations": {                     
+    "download_average": {                
+      "avg": {                           
+        "field": "downloadTotal"       
+      }      
+    }
+  },
+  "size": 0                            
+}
+
+
+GET bigginsight/_search
+{
+ "aggregations": {                    
+    "download_min": {                  
+      "min": {                         
+        "field": "downloadTotal"       
+      }      
+    }
+  },
+  "size": 0                            
+}
+
+
+GET bigginsight/_search
+{
+ "aggregations": {                    
+    "download_max": {                  
+      "max": {                         
+        "field": "downloadTotal"       
+      }      
+    }
+  },
+  "size": 0                            
+}
+
+
+GET bigginsight/_search
+{
+ "aggregations": {
+    "download_stats": {
+      "stats": {
+        "field": "downloadTotal"
+      }
+    }
+  },
+  "size": 0
+}
+
+
+GET bigginsight/_search
+{
+ "aggregations": {
+    "download_estats": {
+      "extended_stats": {
+        "field": "downloadTotal"
+      }
+    }
+  },
+  "size": 0
+}
+
+
+GET bigginsight/_search
+{
+ "aggregations": {
+    "unique_visitors": {
+      "cardinality": {
+        "field": "username"
+      }
+    }
+  },
+  "size": 0
+}
+
+
+GET /bigginsight/usageReport/_search
+{
+  "aggs": {                           
+    "byCategory": {                   
+      "terms": {                      
+        "field": "category"           
+      }
+    }
+  },
+  "size": 0                           
+}
+
+
+GET /bigginsight/usageReport/_search?size=0
+{
+  "aggs": {
+    "byApplication": {
+      "terms": {
+        "field": "application"
+      }
+    }
+  }
+}
+
+
+GET /bigginsight/usageReport/_search?size=0
+{
+  "aggs": {
+    "byApplication": {
+      "terms": {
+        "field": "application",
+        "size": 15
+      }
+    }
+  }
+}
+
+POST /bigginsight/_search?size=0
+{
+  "aggs": {
+    "by_usage": {
+      "histogram": {
+        "field": "usage",
+        "interval": 1000
+      }
+    }
+  }
+}
+
+
+POST /bigginsight/_search?size=0
+{
+  "aggs": {
+    "by_usage": {
+      "range": {
+        "field": "usage",
+        "ranges": [
+          { "to": 1024 },
+          { "from": 1024, "to": 102400 },
+          { "from": 102400 }
+        ]
+      }
+    }
+  }
+}
+
+
+POST /bigginsight/_search?size=0
+{
+  "aggs": {
+    "by_usage": {
+      "range": {
+        "field": "usage",
+        "ranges": [
+          { "key": "Upto 1 kb", "to": 1024 },
+          { "key": "1 kb to 100 kb","from": 1024, "to": 102400 },
+          { "key": "100 kb and more", "from": 102400 }
+        ]
+      }
+    }
+  }
+}
+
+
+GET /bigginsight/usageReport/_search?size=0
+{
+  "query": {
+    "term": {
+      "customer": "Linkedin"
+    }
+  }, 
+  "aggs": {                           
+    "byCategory": {                   
+      "terms": {                      
+        "field": "category"           
+      }
+    }
+  }
+}
+
+
+GET /bigginsight/usageReport/_search?size=0
+{
+  "query": {
+    "bool": {
+      "must": [
+        {"term": {"customer": "Linkedin"}}, 
+        {"range": {"time": {"gte": 1506277800000, "lte": 1506294200000}}}
+      ]
+    }
+  },
+  "aggs": {
+    "byCategory": {
+      "terms": {
+        "field": "category"
+      }
+    }
+  }
+}
+
+
+GET /bigginsight/usageReport/_search?size=0
+{
+  "query": {                                      
+    "bool": {
+      "must": [
+        {"term": {"customer": "Linkedin"}}, 
+        {"range": {"time": {"gte": 1506257800000, "lte": 1506314200000}}}
+      ]
+    }
+  },
+  "aggs": {
+    "by_users": {                                 
+      "terms": {
+        "field": "username"
+      },
+      "aggs": {
+        "total_usage": {                          
+          "sum": { "field": "usage" }
+        }
+      }
+    }
+  }
+}
+
+
+GET /bigginsight/usageReport/_search?size=0
+{
+  "query": {                                                  
+    "bool": {
+      "must": [
+        {"term": {"customer": "Linkedin"}}, 
+        {"range": {"time": {"gte": 1506257800000, "lte": 1506314200000}}}
+      ]
+    }
+  },
+  "aggs": {
+    "by_departments": {                                       
+      "terms": { "field": "department" },               
+      "aggs": {
+        "by_users": {                                         
+          "terms": {
+            "field": "username",
+            "size": 2,                                        
+            "order": { "total_usage": "desc"}
+          },
+          "aggs": {
+            "total_usage": {"sum": { "field": "usage" }}      
+          }
+        }
+      }
+    }
+  }
+}
+
+
+POST /bigginsight/_search?size=0
+{
+  "aggs": {
+    "chat": {
+      "filter": {
+        "term": {
+          "category": "Chat"
+        }
+      }
+    }
+  }
+}
+
+
+GET bigginsight/_search?size=0
+{
+  "aggs": {
+    "messages": {
+      "filters": {
+        "filters": {
+          "chat": { "match": { "category": "Chat" }},              
+          "skype": { "match": { "application": "Skype" }},         
+          "other_than_skype": {                                    
+            "bool": {
+              "must": {"match": {"category": "Chat"}},
+              "must_not": {"match": {"application": "Skype"}}
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+
+GET /bigginsight/usageReport/_search?size=0       
+{
+  "aggs": {
+    "counts_over_time": {
+      "date_histogram": {                         
+        "field": "time",
+        "interval": "1d"                          
+      }
+    }
+  }
+}
+
+
+GET /bigginsight/usageReport/_search?size=0
+{
+  "aggs": {
+    "counts_over_time": {
+      "date_histogram": {
+        "field": "time",
+        "interval": "1d",
+        "time_zone": "+05:30"
+      }
+    }
+  }
+}
+
+
+GET /bigginsight/usageReport/_search?size=0
+{
+  "query": { "term": {"customer": "Linkedin"} },
+  "aggs": {
+    "counts_over_time": {
+      "date_histogram": {
+        "field": "time",
+        "interval": "1d",
+        "time_zone": "+05:30"
+      },
+      "aggs": {
+        "total_bandwidth": {
+          "sum": { "field": "usage" }
+        }
+      }
+    }
+  }
+}
+
+
+GET /bigginsight/usageReport/_search?size=0
+{
+  "query": {
+    "bool": {
+      "must": [
+        {"term": {"customer": "Linkedin"}}, 
+        {"range": {"time": {"gte": 1506277800000}}}
+      ]
+    }
+  },
+  "aggs": {
+    "counts_over_time": {
+      "date_histogram": {
+        "field": "time",
+        "interval": "1h",
+        "time_zone": "+05:30"
+      },
+      "aggs": {
+        "hourly_usage": {
+          "sum": { "field": "usage" }
+        }
+      }
+    }
+  }
+}
+
+
+
+GET bigginsight/usageReport/_search?size=0
+{
+  "aggs": {
+    "within_radius": {
+      "geo_distance": {
+        "field": "location",
+        "origin": {"lat": 23.102869,"lon": 72.595692},
+        "ranges": [{"to": 5}]
+      }
+    }
+  }
+}
+
+
+GET bigginsight/usageReport/_search?size=0
+{
+  "aggs": {
+    "within_radius": {
+      "geo_distance": {
+        "field": "location",
+        "origin": {"lat": 23.102869,"lon": 72.595692},
+        "ranges": [{"from": 5, "to": 10}]
+      }
+    }
+  }
+}
+
+
+GET bigginsight/usageReport/_search?size=0
+{
+  "aggs": {
+    "geo_hash": {
+      "geohash_grid": {
+        "field": "location",
+        "precision": 7
+      }
+    }
+  }
+}
+
+
+GET /bigginsight/usageReport/_search?size=0
+{
+  "query": {
+    "bool": {
+      "must": [
+        {"term": {"customer": "Linkedin"}}, 
+        {"range": {"time": {"gte": 1506277800000}}}
+      ]
+    }
+  },
+  "aggs": {
+    "counts_over_time": {
+      "date_histogram": {
+        "field": "time",
+        "interval": "1h",
+        "time_zone": "+05:30"
+      },
+      "aggs": {
+        "hourly_usage": {
+          "sum": { "field": "usage" }
+        },
+        "cumulative_hourly_usage": {            
+          "cumulative_sum": {                   
+              "buckets_path": "hourly_usage"     
+          }
+        }
+      }
+    }
+  }
+}
+
+PUT /_ingest/pipeline/firstpipeline
+{
+
+   "description" : "uppercase the incoming value in the message field",
+
+   "processors" : [
+
+     {
+
+       "uppercase" : {
+
+         "field": "message"
+
+       }
+
+     }
+
+   ]
+
+ }
+
+GET /_ingest/pipeline
+
+POST _analyze
+{
+  "tokenizer":      "keyword", 
+  "char_filter":  [ "html_strip" ],
+  "text": "<p>I&apos;m so <b>happy</b>!</p>"
+}
+
+
+GET /_xpack/security/user
+
+
+GET /_cat/indices
+
+curl -X PUT "http://localhost:9200/movies/"
+
+curl -X POST "http://localhost:9200/movies/movie/" -H 'content-type: application/json' -d '{"name":"Justice League", "genre":"Action",  "summary":"Fueled by his restored faith in humanity and inspired by Superman's selfless act, Bruce Wayne enlists the help of his newfound ally, Diana Prince, to face an even greater enemy","yearofrelease":201, "metascore":45, "votes":275122, "rating":6.6}'
+
+
+PUT my_index
+{
+  "settings": {
+    "analysis": {
+      "analyzer": {
+        "my_custom_analyzer": { 
+          "type": "custom",
+          "char_filter": [
+            "emoticons"
+          ],
+          "tokenizer": "punctuation",
+          "filter": [
+            "lowercase",
+            "english_stop"
+          ]
+        }
+      },
+      "tokenizer": {
+        "punctuation": { 
+          "type": "pattern",
+          "pattern": "[ .,!?]"
+        }
+      },
+      "char_filter": {
+        "emoticons": { 
+          "type": "mapping",
+          "mappings": [
+            ":) => _happy_",
+            ":( => _sad_"
+          ]
+        }
+      },
+      "filter": {
+        "english_stop": { 
+          "type": "stop",
+          "stopwords": "_english_"
+        }
+      }
+    }
+  }
+}
+
+POST my_index/_analyze
+{
+  "analyzer": "my_custom_analyzer",
+  "text":     "I'm a :) person, and you?"
+}
+
+
+PUT /_snapshot/backups
+{
+
+  "type": "fs",
+  "settings": {
+      "location": "/home/vagrant/es_backups/backups",
+      "compress": true
+
+  }
+
+}
+
+
+
+
+
+
+
+
